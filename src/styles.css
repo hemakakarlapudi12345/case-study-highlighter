@@ -1,0 +1,94 @@
+:root {
+  --bg: #f6f7fb;
+  --panel-bg: #fff;
+  --accent: #0078ff;
+  --muted: #666;
+  --highlight: #fff791;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, Arial, sans-serif;
+  background: var(--bg);
+}
+
+.app {
+  padding: 18px;
+}
+
+.title {
+  margin: 0 0 10px 0;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.container {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+/* PDF area */
+.pdf-wrapper {
+  width: 60%;
+  background: var(--panel-bg);
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  overflow: auto;
+  max-height: 72vh;
+}
+
+/* Right text panel */
+.text-panel {
+  width: 40%;
+  background: var(--panel-bg);
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  max-height: 72vh;
+  overflow: auto;
+}
+
+.ref-links {
+  margin-bottom: 12px;
+}
+.ref-btn {
+  margin-right: 8px;
+  border: 1px solid #ddd;
+  background: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.ref-btn.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+/* when the app highlights text inside the right transcript */
+.text-highlight {
+  background: #fff791;
+  padding: 1px 2px;
+  border-radius: 2px;
+}
+
+/* highlight span inserted in PDF text layer */
+.pdf-highlight {
+  background: #fff791;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+/* small adjustments for PDF pages */
+.react-pdf__Page {
+  margin-bottom: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+/* footer */
+.footer {
+  margin-top: 12px;
+  color: var(--muted);
+}
