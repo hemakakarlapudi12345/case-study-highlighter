@@ -1,31 +1,32 @@
-import React, { useState } from 'react'
-import PdfViewer from './PdfViewer'
-import TextPanel from './TextPanel'
+import React, { useState } from "react";
+import PdfViewer from "./PdfViewer";
+import TextPanel from "./TextPanel";
+import "./styles.css";
 
 export default function App() {
-  // mapping of reference numbers to search phrases & page number
-  const refs = {
-    1: { phrase: 'EBITDA increase (USD 2.3 bn vs USD 2.1 bn prior year)', page: 1 },
-    2: { phrase: 'EBITDA increased to USD 2.3 bn', page: 1 },
-    3: { phrase: 'Gain on sale of non-current assets', page: 15 } // adjust page if needed
-  }
+  const pdfFile = "/Maersk_Q2_2025_Interim_Report.pdf"; // CORRECT file path
 
-  const [activeRef, setActiveRef] = useState(null)
+  const refs = {
+    1: { page: 3, phrase: "Highlights Q2 2025" },
+    2: { page: 5, phrase: "Review Q2 2025" },
+    3: { page: 15, phrase: "gain on sale of non-current assets" },
+  };
+
+  const [activeRef, setActiveRef] = useState(null);
 
   return (
-    <div className="app">
-      <h2 className="title">Case Study — PDF ↔ Text Highlighter</h2>
-      <div className="container">
-        <PdfViewer
-          file="/Maersk_Q2_2025_Interim_Report.pdf"
-          refs={refs}
-          activeRef={activeRef}
-        />
-        <TextPanel refs={refs} activeRef={activeRef} onClickRef={setActiveRef} />
-      </div>
-      <div className="footer">
-        <p>Click a reference like <strong>[3]</strong> on the right — corresponding phrase in the PDF will be highlighted.</p>
+    <div className="container">
+      <h1 className="title">Case Study — PDF ↔ Smart Highlighter</h1>
+
+      <div className="main-content">
+        <div className="pdf-column">
+          <PdfViewer file={pdfFile} refs={refs} activeRef={activeRef} />
+        </div>
+
+        <div className="text-column">
+          <TextPanel refs={refs} setActiveRef={setActiveRef} />
+        </div>
       </div>
     </div>
-  )
+  );
 }
