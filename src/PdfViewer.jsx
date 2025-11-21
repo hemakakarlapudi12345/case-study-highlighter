@@ -1,160 +1,151 @@
-import React, { useEffect, useRef } from 'react';
-import { Document, Page, pdfjs } from 'react-pdf';
-import 'react-pdf/dist/esm/Page/TextLayer.css';
+import React, { useEffect, useState, useRef } from "react";
+import { Document, Page, pdfjs } from "react-pdf";
+import "react-pdf/dist/esm/Page/TextLayer.css";
 
-// ✔ FIXED WORKER IMPORT (works with react-pdf v7)
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.js`;
+pdfjs.GlobalWorkerOptions.workerSrc =
+  `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
-export default function PdfViewer({ file, refs, activeRef }) {
-  const docRef = useRef(null);
-  const textLayerSelector = '.react-pdf__Page__textContent';
+export default function PdfViewer({ file, refs, activeRef, onClearFromPanel }) {
+  const [numPages, setNumPages] = useState(null);
+  const containerRef = useRef(null);
+  const [pageWidth, setPageWidth] = useState(1000);
+  const [zoom, setZoom] = useState(1);
 
+  /* ---------------- AUTO WIDTH ---------------- */
   useEffect(() => {
-    // remove old highlights
-    const removeHighlights = () => {
-      document.querySelectorAll('.pdf-highlight').forEach(el => {
-        const parent = el.parentNode;
-        parent.replaceChild(document.createTextNode(el.textContent), el);
-        parent.normalize();
-      });
-    };
+    function handleResize() {
+      if (!containerRef.current) return;
+      const w = containerRef.current.offsetWidth;
+      setPageWidth(Math.max(400, w - 30));
+    }
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
-    removeHighlights();
+  /* ---------------- HANDLE HIGHLIGHTS ---------------- */
+  useEffect(() => {
+    removePdfHighlights();
 
     if (!activeRef) return;
 
-    const { phrase, page } = refs[activeRef];
-
-    // delay ensures text layer fully loaded
     setTimeout(() => {
-      let found = false;
+      const { phrase, page } = refs[activeRef];
+      highlightPhraseOnPage(phrase, page);
+    }, 450);
+  }, [activeRef]);
 
-      const pageContainers = document.querySelectorAll(
-        `.react-pdf__Page[data-page-number="${page}"] ${textLayerSelector}`
-      );
+  const removePdfHighlights = () => {
+    document.querySelectorAll(".pdf-highlight").forEach(h => {
+      const parent = h.parentNode;
+      if (!parent) return;
+      parent.replaceChild(document.createTextNode(h.textContent), h);
+      parent.normalize();
+    });
+  };
 
-      const containers =
-        pageContainers.length > 0
-          ? pageContainers
-          : document.querySelectorAll(textLayerSelector);
+  /* ---------------- HIGHLIGHT EXACT PHRASE ---------------- */
+  const highlightPhraseOnPage = (phrase, pageNumber) => {
+    const selector = `.react-pdf__Page[data-page-number="${pageNumber}"] .react-pdf__Page__textContent`;
+    const layer = document.querySelector(selector);
+    if (!layer) return;
 
-      // try simple same-span highlight
-      containers.forEach(container => {
-        const spans = Array.from(container.querySelectorAll('span'));
-        spans.forEach(span => {
-          const text = span.textContent || '';
-          const idx = text.toLowerCase().indexOf(phrase.toLowerCase());
-          if (idx !== -1 && !found) {
-            found = true;
+    const spans = [...layer.querySelectorAll("span")];
+    let fullText = "";
+    let map = [];
 
-            const before = text.slice(0, idx);
-            const match = text.slice(idx, idx + phrase.length);
-            const after = text.slice(idx + phrase.length);
+    spans.forEach((s, i) => {
+      map.push({ index: fullText.length, span: s });
+      fullText += s.textContent;
+    });
 
-            const frag = document.createDocumentFragment();
+    const lower = fullText.toLowerCase();
+    const term = phrase.toLowerCase();
+    const idx = lower.indexOf(term);
+    if (idx === -1) return;
 
-            if (before) frag.appendChild(document.createTextNode(before));
+    const end = idx + term.length;
 
-            const highlight = document.createElement('span');
-            highlight.className = 'pdf-highlight';
-            highlight.textContent = match;
-            frag.appendChild(highlight);
+    for (let i = 0; i < map.length; i++) {
+      const { index, span } = map[i];
+      const nextIndex = i < map.length - 1 ? map[i + 1].index : fullText.length;
 
-            if (after) frag.appendChild(document.createTextNode(after));
+      if (end <= index || idx >= nextIndex) continue;
 
-            span.innerHTML = '';
-            span.appendChild(frag);
+      const localStart = Math.max(0, idx - index);
+      const localEnd = Math.min(span.textContent.length, end - index);
 
-            highlight.scrollIntoView({
-              behavior: 'smooth',
-              block: 'center',
-            });
-          }
-        });
-      });
+      const before = span.textContent.slice(0, localStart);
+      const match = span.textContent.slice(localStart, localEnd);
+      const after = span.textContent.slice(localEnd);
 
-      // try multi-span highlight if not found
-      if (!found) {
-        containers.forEach(container => {
-          const spans = Array.from(container.querySelectorAll('span'));
-          const fullText = spans.map(s => s.textContent || '').join('');
-          const idx = fullText.toLowerCase().indexOf(phrase.toLowerCase());
+      const frag = document.createDocumentFragment();
+      if (before) frag.appendChild(document.createTextNode(before));
 
-          if (idx !== -1 && !found) {
-            found = true;
-            let remaining = phrase.length;
-            let charCount = 0;
+      const h = document.createElement("span");
+      h.className = "pdf-highlight";
+      h.textContent = match;
+      frag.appendChild(h);
 
-            for (const s of spans) {
-              const sText = s.textContent || '';
-              const sLen = sText.length;
+      if (after) frag.appendChild(document.createTextNode(after));
 
-              if (charCount + sLen <= idx) {
-                charCount += sLen;
-                continue;
-              }
+      span.innerHTML = "";
+      span.appendChild(frag);
+    }
 
-              const start = Math.max(0, idx - charCount);
-              const take = Math.min(remaining, sLen - start);
+    const first = layer.querySelector(".pdf-highlight");
+    if (first) scrollToHighlight(first);
+  };
 
-              const before = sText.slice(0, start);
-              const match = sText.slice(start, start + take);
-              const after = sText.slice(start + take);
+  const scrollToHighlight = (el) => {
+    const cont = containerRef.current;
+    if (!cont) return;
 
-              const frag = document.createDocumentFragment();
+    const elRect = el.getBoundingClientRect();
+    const cRect = cont.getBoundingClientRect();
 
-              if (before) frag.appendChild(document.createTextNode(before));
+    const pos = cont.scrollTop + (elRect.top - cRect.top) - cont.clientHeight / 3;
 
-              const highlight = document.createElement('span');
-              highlight.className = 'pdf-highlight';
-              highlight.textContent = match;
-              frag.appendChild(highlight);
+    cont.scrollTo({ top: pos, behavior: "smooth" });
+  };
 
-              if (after) frag.appendChild(document.createTextNode(after));
+  /* ---------------- ZOOM ---------------- */
+  const zoomIn = () => setZoom(z => Math.min(1, +(z + 0.1).toFixed(2)));
+  const zoomOut = () => setZoom(z => Math.max(0.5, +(z - 0.1).toFixed(2)));
+  const resetZoom = () => setZoom(1);
 
-              s.innerHTML = '';
-              s.appendChild(frag);
-
-              remaining -= take;
-              charCount += sLen;
-              if (remaining <= 0) break;
-            }
-
-            const firstHighlight = container.querySelector('.pdf-highlight');
-            if (firstHighlight) {
-              firstHighlight.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center',
-              });
-            }
-          }
-        });
-      }
-    }, 300);
-
-    return () => {
-      document
-        .querySelectorAll('.pdf-highlight')
-        .forEach(el => el.replaceWith(document.createTextNode(el.textContent)));
-    };
-  }, [activeRef, refs]);
-
+  /* ---------------- RENDER ---------------- */
   return (
     <div className="pdf-wrapper">
-      <Document
-        file={file}
-        onLoadError={err => console.error('PDF load error:', err)}
-        ref={docRef}
-      >
-        {Array.from({ length: 20 }, (_, i) => (
-          <Page
-            key={i + 1}
-            pageNumber={i + 1}
-            width={600}
-            renderTextLayer={true}
-          />
-        ))}
-      </Document>
+
+      {/* TOOLBAR */}
+      <div className="pdf-toolbar">
+        <strong>PDF</strong>
+        <button className="tb-btn" onClick={zoomOut}>-</button>
+        <button className="tb-btn" onClick={resetZoom}>100%</button>
+        <button className="tb-btn" onClick={zoomIn}>+</button>
+        <span style={{ marginLeft: 8 }}>Zoom: {(zoom * 100).toFixed(0)}%</span>
+      </div>
+
+      {/* PDF Pages */}
+      <div ref={containerRef} className="pdf-left-container">
+        <Document
+          file={file}
+          onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+        >
+          {Array.from({ length: numPages || 0 }, (_, i) => (
+            <div className="page-frame" key={i}>
+              <Page
+                pageNumber={i + 1}
+                width={Math.round(pageWidth * zoom)}
+                renderTextLayer={true}
+                renderAnnotationLayer={false}
+                className="react-pdf__Page"
+              />
+            </div>
+          ))}
+        </Document>
+      </div>
     </div>
   );
 }
