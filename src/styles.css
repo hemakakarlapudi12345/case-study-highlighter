@@ -1,94 +1,223 @@
-:root {
-  --bg: #f6f7fb;
-  --panel-bg: #fff;
-  --accent: #0078ff;
-  --muted: #666;
-  --highlight: #fff791;
-}
-
+/* general layout */
 body {
+  font-family: Arial, sans-serif;
+  background: #f5f5ff;
   margin: 0;
-  font-family: Inter, Arial, sans-serif;
-  background: var(--bg);
-}
-
-.app {
-  padding: 18px;
-}
-
-.title {
-  margin: 0 0 10px 0;
-  color: var(--accent);
-  font-weight: 600;
+  padding: 0;
 }
 
 .container {
+  padding: 20px;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 34px;
+  font-weight: 700;
+}
+
+.main-content {
   display: flex;
-  gap: 18px;
-  align-items: flex-start;
+  gap: 24px;
 }
 
-/* PDF area */
+/* left/pdf column */
+.pdf-column {
+  flex: 2;
+}
+
 .pdf-wrapper {
-  width: 60%;
-  background: var(--panel-bg);
-  border-radius: 8px;
-  padding: 12px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
-  overflow: auto;
-  max-height: 72vh;
-}
-
-/* Right text panel */
-.text-panel {
-  width: 40%;
-  background: var(--panel-bg);
-  padding: 16px;
-  border-radius: 8px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
-  max-height: 72vh;
-  overflow: auto;
-}
-
-.ref-links {
-  margin-bottom: 12px;
-}
-.ref-btn {
-  margin-right: 8px;
-  border: 1px solid #ddd;
   background: white;
+  border-radius: 10px;
+  padding: 8px;
+  box-shadow: 0 6px 18px rgba(20,24,60,0.06);
+  height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* toolbar at top */
+.pdf-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #eee;
+  background: white;
+  z-index: 10;
+  box-shadow: none;
+}
+
+/* toolbar buttons */
+.tb-btn {
   padding: 6px 10px;
+  background: #fff;
+  border: 1px solid #ddd;
   border-radius: 6px;
   cursor: pointer;
 }
-.ref-btn.active {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
+
+/* internal container that scrolls the pages */
+.pdf-left-container {
+  flex: 1;
+  overflow: auto;
+  padding: 12px;
 }
 
-/* when the app highlights text inside the right transcript */
-.text-highlight {
-  background: #fff791;
+/* page frame gives nice shadow around each page */
+.page-frame {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px; /* small spacing for shadow to show */
+  padding: 10px;
+  background: transparent;
+}
+
+/* style the actual canvas wrapper produced by react-pdf */
+.react-pdf__Page {
+  display: block;
+  width: 100%;
+}
+
+/* wrap canvas in a white panel to imitate a page with shadow */
+.react-pdf__Page > canvas {
+  box-shadow: 0 6px 18px rgba(20,24,60,0.12);
+  border-radius: 6px;
+  background: #fff;
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+/* Text layer (in front of canvas) */
+.react-pdf__Page__textContent {
+  pointer-events: none; /* avoid interfering with toolbar clicks */
+}
+
+/* ===== Remove big gaps between pages =====
+   We still keep a very small margin for shadows to show.
+   If you want pages touching exactly, set margin-bottom to 0 above.
+*/
+.react-pdf__Document {
+  display: flex;
+  flex-direction: column;
+  gap: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* try to eliminate react-pdf wrapper spaces */
+.page, .page-frame, .react-pdf__Page {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 0 !important;
+}
+
+/* Right column / text panel */
+.text-column {
+  flex: 1;
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(20,24,60,0.06);
+  height: 90vh;
+  overflow-y: auto;
+}
+
+/* text styles */
+.section-title {
+  margin-top: 0;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.analysis-text {
+  line-height: 1.6;
+  font-size: 15px;
+  margin-bottom: 14px;
+  color: #222;
+}
+
+/* small blocks that hold content; we use data-original to restore */
+.analysis-block {
+  color: #222;
+}
+
+/* references */
+.ref {
+  color: #1657ff;
+  cursor: pointer;
+  font-weight: 700;
+}
+.ref:hover {
+  text-decoration: underline;
+}
+
+/* Findings block */
+.section-subtitle {
+  margin-top: 20px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* SEARCH input + CLEAR */
+.search-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 2px solid #dfe2ff;
+  outline: none;
+  font-size: 15px;
+}
+.search-input:focus {
+  border-color: #6a79ff;
+  box-shadow: 0 6px 20px rgba(106,121,255,0.08);
+}
+.clear-btn {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+}
+
+/* right-panel inline highlight */
+.right-highlight {
+  background: #ffef9a;
+  color: #000;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+/* PDF highlight style (yellow translucent) */
+.pdf-highlight {
+  background: rgba(255, 235, 0, 0.45);
   padding: 1px 2px;
   border-radius: 2px;
 }
 
-/* highlight span inserted in PDF text layer */
-.pdf-highlight {
-  background: #fff791;
-  border-radius: 2px;
-  padding: 0 2px;
+/* minimize extra spaces in react-pdf layers */
+.react-pdf__Page__annotations,
+.react-pdf__Page__textContent {
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
-/* small adjustments for PDF pages */
-.react-pdf__Page {
+/* ensure scrollbars visually consistent */
+.pdf-left-container::-webkit-scrollbar,
+.text-column::-webkit-scrollbar {
+  width: 10px;
+}
+.pdf-left-container::-webkit-scrollbar-thumb,
+.text-column::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.12);
+  border-radius: 6px;
+}
+
+/* small utilities */
+.analysis-list .analysis-text {
   margin-bottom: 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-}
-
-/* footer */
-.footer {
-  margin-top: 12px;
-  color: var(--muted);
 }
